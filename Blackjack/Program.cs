@@ -8,8 +8,8 @@ int money = 200;
 
 int currentPlayerCard = 0;
 int currentDealerCard = 0;
-int playerHandValue = 0;
-int dealerHandValue = 0;
+int playerHandValue;
+int dealerHandValue;
 
 string selector = "";
 
@@ -130,7 +130,6 @@ class Game
     private int _money;
 
     private bool _busted = false;
-    private bool _maxHand = false;
 
     private Random _rand = new Random();
 
@@ -147,7 +146,7 @@ class Game
     public int DealCard()
     {
         int card = _rand.Next(52);
-        if (_cards[card / 13, card % 13] > 0)
+        while (_cards[card / 13, card % 13] > 0)
         {
             card = _rand.Next(52);
         }
@@ -165,7 +164,7 @@ class Game
         {
             if (card > 0)
             {
-                if (((card - 1) % 13) + 1 > 10)
+                if (((card - 1) % 13) > 9)
                 {
                     handValue += 10;
                 }
