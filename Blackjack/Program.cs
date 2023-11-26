@@ -9,7 +9,7 @@ int money = 200;
 int currentPlayerCard = 0;
 int currentDealerCard = 0;
 int playerHandValue;
-int dealerHandValue;
+int dealerHandValue = 0;
 
 string selector = "";
 
