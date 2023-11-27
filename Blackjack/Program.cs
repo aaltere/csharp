@@ -3,6 +3,7 @@ int[] dealerCards = new int[11];
 
 bool dealerTurn = false;
 bool stand = false;
+bool blackjack = false;
 
 int money = 200;
 
@@ -48,67 +49,90 @@ while (selector.ToLower() != "q")
             playerHandValue = game.CheckHand(playerCards, dealerTurn);
             if (game.MaxHand(playerHandValue, dealerTurn))
             {
-                Console.WriteLine("Blackjack!!");
-            }
-
-            while (!stand && !game.IsBusted() && !game.MaxHand(playerHandValue, dealerTurn))
-            {
-                Console.WriteLine("What would you like to do:");
-                Console.WriteLine("h - hit");
-                Console.WriteLine("s - stand");
-                Console.Write(": ");
-                string gameSelector = Console.ReadLine();
-                while (gameSelector.ToLower() != "h" && gameSelector.ToLower() != "s")
-                {
-                    Console.WriteLine("\nPlease enter h or s.");
-                    Console.Write(": ");
-                    gameSelector = Console.ReadLine();
-                }
-                switch (gameSelector)
-                {
-                    case "h":
-                        playerCards[currentPlayerCard++] = game.DealCard();
-                        game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                        playerHandValue = game.CheckHand(playerCards, dealerTurn);
-                        break;
-                    case "s":
-                        stand = true;
-                        break;
-                }
-            }
-            if (!game.IsBusted())
-            {
                 dealerTurn = true;
-
+                blackjack = true;
+                Console.WriteLine("Blackjack!!");
                 game.DisplayCards(playerCards, dealerCards, dealerTurn);
                 dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
-                while (!game.IsBusted() && !game.MaxHand(dealerHandValue, dealerTurn))
-                {
-                    dealerCards[currentDealerCard++] = game.DealCard();
-                    game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                    dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
-                }
-            }
-
-            if (!game.IsBusted())
-            {
-                if (playerHandValue > dealerHandValue)
+                if (dealerHandValue < 21)
                 {
                     Console.WriteLine("You Win!!");
                 }
-                else if (playerHandValue < dealerHandValue)
-                {
-                    Console.WriteLine("You Lose.");
-                }
                 else
                 {
-                    Console.WriteLine("It's a draw!");
+                    Console.WriteLine("It's a push Blackjack to Blackjack!!");
                 }
             }
+            else
+            {
 
+                while (!stand && !game.Busted && !game.MaxHand(playerHandValue, dealerTurn))
+                {
+                    Console.WriteLine("What would you like to do:");
+                    Console.WriteLine("h - hit");
+                    Console.WriteLine("s - stand");
+                    Console.Write(": ");
+                    string gameSelector = Console.ReadLine();
+                    while (gameSelector.ToLower() != "h" && gameSelector.ToLower() != "s")
+                    {
+                        Console.WriteLine("\nPlease enter h or s.");
+                        Console.Write(": ");
+                        gameSelector = Console.ReadLine();
+                    }
+                    switch (gameSelector)
+                    {
+                        case "h":
+                            playerCards[currentPlayerCard++] = game.DealCard();
+                            game.DisplayCards(playerCards, dealerCards, dealerTurn);
+                            playerHandValue = game.CheckHand(playerCards, dealerTurn);
+                            break;
+                        case "s":
+                            stand = true;
+                            break;
+                    }
+                }
+                if (!game.Busted)
+                {
+                    dealerTurn = true;
+
+                    game.DisplayCards(playerCards, dealerCards, dealerTurn);
+                    dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
+                    if (dealerHandValue == 21)
+                    {
+                        blackjack = true;
+                        Console.WriteLine("Dealer Blackjack.");
+                        Console.WriteLine("You Lose.");
+                    }
+                    else
+                    {
+                        while (!game.Busted && !game.MaxHand(dealerHandValue, dealerTurn))
+                        {
+                            dealerCards[currentDealerCard++] = game.DealCard();
+                            game.DisplayCards(playerCards, dealerCards, dealerTurn);
+                            dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
+                        }
+                    }
+                }
+
+                if (!game.Busted && !blackjack)
+                {
+                    if (playerHandValue > dealerHandValue)
+                    {
+                        Console.WriteLine($"You Win {playerHandValue} to {dealerHandValue}!!");
+                    }
+                    else if (playerHandValue < dealerHandValue)
+                    {
+                        Console.WriteLine($"You Lose {dealerHandValue} to {playerHandValue}.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"It's a push {dealerHandValue} to {playerHandValue}!");
+                    }
+                }
+            }
             break;
         case "m":
-            game.DisplayMoney();
+            Console.WriteLine($"\nYou have ${game.Money} left.");
             break;
     }
 
@@ -129,9 +153,7 @@ class Game
 {
     private int _money;
 
-    private bool _busted = false;
-
-    private Random _rand = new Random();
+    private Random _rand;
 
     private readonly char[] _suits = new char[] { 's', 'h', 'd', 'c' };
     private readonly char[] _ranks = new char[] { 'a', '2', '3', '4', '5', '6', '7',
@@ -141,6 +163,7 @@ class Game
     public Game(int money)
     {
         _money = money;
+        _rand = new Random();
     }
 
     public int DealCard()
@@ -159,6 +182,8 @@ class Game
     {
         int handValue = 0;
         int aces = 0;
+
+        Busted = false;
 
         foreach (int card in hand)
         {
@@ -190,13 +215,15 @@ class Game
         {
             if (dealerTurn)
             {
+                Console.WriteLine("Dealer bust.");
                 Console.WriteLine("You Win!!");
             }
             else
             {
+                Console.WriteLine("You bust.");
                 Console.WriteLine("You lose.");
             }
-            _busted = true;
+            Busted = true;
 
             return 0;
         }
@@ -236,12 +263,15 @@ class Game
         Console.WriteLine("\n");
     }
 
-    public void DisplayMoney()
+    public int Money
     {
-        Console.WriteLine($"\nYou have ${_money} left.");
+        get
+        {
+            return _money;
+        }
     }
 
-    public bool IsBusted() { return _busted; }
+    public bool Busted { private set; get; }
 
     public bool MaxHand(int handValue, bool dealerTurn) 
     {
