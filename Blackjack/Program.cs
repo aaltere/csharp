@@ -1,10 +1,8 @@
-﻿// Aarrays for storing card's value during a game
-int[] playerCards = new int[11];
-int[] dealerCards = new int[11];
+﻿// Lists for storing player's and dealer's cards
+List<int> playerHand = new List<int>();
+List<int> dealerHand = new List<int>();
 
-// Counting how many cards for the array above and value of player's and dealer's hand
-int currentPlayerCard = 0;
-int currentDealerCard = 0;
+// Value of player's and dealer's hand
 int playerHandValue;
 int dealerHandValue = 0;
 
@@ -12,6 +10,7 @@ int dealerHandValue = 0;
 bool dealerTurn = false;
 bool stand = false;
 bool blackjack = false;
+bool bust = false;
 
 // Starting money
 int money = 200;
@@ -51,27 +50,26 @@ while (selector.ToLower() != "q")
     {
         case "p":
             // Deal 2 cards each to player and dealer
-            playerCards[currentPlayerCard++] = game.DealCard();
-            playerCards[currentPlayerCard++] = game.DealCard();
-            dealerCards[currentDealerCard++] = game.DealCard();
-            dealerCards[currentDealerCard++] = game.DealCard();
+            playerHand.Add(game.DealCard());
+            dealerHand.Add(game.DealCard());
+            playerHand.Add(game.DealCard());
+            dealerHand.Add(game.DealCard());
 
             // Display the cards and calculate the value of player's hand
-            game.DisplayCards(playerCards, dealerCards, dealerTurn);
-            playerHandValue = game.CheckHand(playerCards, dealerTurn);
+            game.DisplayCards(playerHand, dealerHand, dealerTurn);
+            playerHandValue = game.CheckHand(playerHand);
 
             // Check if the player has 21 at this point for blackjack
             if (game.MaxHand(playerHandValue, dealerTurn))
             {
                 // Switch turn
                 dealerTurn = true;
-                blackjack = true;
                 Console.WriteLine("Blackjack!!");
 
                 // Display all cards and calculate the value of dealer's hand to see if can match blackjack
                 // If not the player win if yes then it's a draw
-                game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
+                game.DisplayCards(playerHand, dealerHand, dealerTurn);
+                dealerHandValue = game.CheckHand(dealerHand);
                 if (dealerHandValue < 21)
                 {
                     Console.WriteLine("You Win!!");
@@ -86,7 +84,7 @@ while (selector.ToLower() != "q")
             else
             {
                 // Loop if player choose to hit, or their hand value is less than 21
-                while (!stand && !game.Busted && !game.MaxHand(playerHandValue, dealerTurn))
+                while (!stand && !bust && !game.MaxHand(playerHandValue, dealerTurn))
                 {
                     // Printing out options and taking player's input 
                     Console.WriteLine("What would you like to do:");
@@ -109,26 +107,34 @@ while (selector.ToLower() != "q")
                     switch (gameSelector)
                     {
                         case "h":
-                            playerCards[currentPlayerCard++] = game.DealCard();
-                            game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                            playerHandValue = game.CheckHand(playerCards, dealerTurn);
+                            playerHand.Add(game.DealCard());
+                            game.DisplayCards(playerHand, dealerHand, dealerTurn);
+                            playerHandValue = game.CheckHand(playerHand);
                             break;
                         case "s":
                             stand = true;
                             break;
                     }
+
+                    // Check if the player bust
+                    if (playerHandValue > 21)
+                    {
+                        Console.WriteLine("You bust.");
+                        Console.WriteLine("You lose.");
+                        bust = true;
+                    }
                 }
 
                 // Check if the player went over 21 to see if the game should continue
-                if (!game.Busted)
+                if (!bust)
                 {
                     // Change the turn to dealer's
                     dealerTurn = true;
 
                     // Re-displaying the cards since one of the dealer's cards started off hidden
                     // Calculating the value of the dealer's hand
-                    game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                    dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
+                    game.DisplayCards(playerHand, dealerHand, dealerTurn);
+                    dealerHandValue = game.CheckHand(dealerHand);
 
                     // Check if the dealer got blackjack
                     // At this point if yes the dealer automatically win
@@ -144,30 +150,38 @@ while (selector.ToLower() != "q")
                     else
                     {
                         // Check to see if dealer bust or go over 16
-                        while (!game.Busted && !game.MaxHand(dealerHandValue, dealerTurn))
+                        while (!bust && !game.MaxHand(dealerHandValue, dealerTurn))
                         {
-                            dealerCards[currentDealerCard++] = game.DealCard();
-                            game.DisplayCards(playerCards, dealerCards, dealerTurn);
-                            dealerHandValue = game.CheckHand(dealerCards, dealerTurn);
+                            dealerHand.Add(game.DealCard());
+                            game.DisplayCards(playerHand, dealerHand, dealerTurn);
+                            dealerHandValue = game.CheckHand(dealerHand);
+
+                            // Check if the dealer bust
+                            if (dealerHandValue > 21)
+                            {
+                                Console.WriteLine("Dealer bust.");
+                                Console.WriteLine("You Win!!");
+                                bust = true;
+                            }
                         }
                     }
                 }
 
                 // Check the game state if both players are still playing and no one had blackjack prior
                 // Conpare the hand values and display message saying who win the game or if it's a draw
-                if (!game.Busted && !blackjack)
+                if (!bust && !blackjack)
                 {
                     if (playerHandValue > dealerHandValue)
                     {
-                        Console.WriteLine($"You Win {playerHandValue} to {dealerHandValue}!!");
+                        Console.WriteLine($"You win, {playerHandValue} to {dealerHandValue}!!");
                     }
                     else if (playerHandValue < dealerHandValue)
                     {
-                        Console.WriteLine($"You Lose {dealerHandValue} to {playerHandValue}.");
+                        Console.WriteLine($"You lose, {dealerHandValue} to {playerHandValue}.");
                     }
                     else
                     {
-                        Console.WriteLine($"It's a push {dealerHandValue} to {playerHandValue}!");
+                        Console.WriteLine($"It's a push, {dealerHandValue} to {playerHandValue}!");
                     }
                 }
             }
@@ -180,20 +194,15 @@ while (selector.ToLower() != "q")
 
     // Reset the hand arrays so both players has no cards
     // Shuffle deck so all cards can be drawn again
-    for (int card = 0; card < 11;  card++)
-    {
-        playerCards[card] = 0;
-        dealerCards[card] = 0;
-    }
+    playerHand.Clear();
+    dealerHand.Clear();
     game.ShuffleDeck();
-
-    // Reset number of cards in hand
-    currentPlayerCard = 0;
-    currentDealerCard = 0;
 
     // Reset conditions for the game state
     dealerTurn = false;
     stand = false;
+    blackjack = false;
+    bust = false;
 }
 
 // Class for all game's functions
@@ -233,41 +242,33 @@ class Game
         }
         _cards[card / 13, card % 13]++;
 
-        return card + 1;
+        return card;
     }
 
     // Method to check hand value given player
-    // Take in the hand array and turn bool
-    public int CheckHand(int[] hand, bool dealerTurn)
+    // Take in the hand list and current turn
+    public int CheckHand(List<int> hand)
     {
         // Value for holding current hand value and amount of aces
         int handValue = 0;
         int aces = 0;
 
-        // Set bust to false
-        Busted = false;
-
-        // Check each card in the hand array and add appropriate value to the hand value
-        // Each card value is subtracted by 1 since was added 1 earlier to pass the card > 0 check
-        // to see if card exist
-        // For aces add 1 to aces and 11 to hand value to be subtracted later
+        // Check each card in the hand list and add appropriate value to the hand value
+        // When card is an ace add 1 to aces and 11 to hand value to be subtracted later
         foreach (int card in hand)
         {
-            if (card > 0)
+            if ((card % 13) > 9)
             {
-                if (((card - 1) % 13) > 9)
-                {
-                    handValue += 10;
-                }
-                else if (((card - 1) % 13) == 0)
-                {
-                    aces++;
-                    handValue += 11;
-                }
-                else
-                {
-                    handValue += (((card - 1) % 13) + 1);
-                }
+                handValue += 10;
+            }
+            else if ((card % 13) == 0)
+            {
+                aces++;
+                handValue += 11;
+            }
+            else
+            {
+                handValue += ((card % 13) + 1);
             }
         }
 
@@ -280,33 +281,13 @@ class Game
             aces--;
         }
 
-        // If hand value exceeded 21 then check whose turn it is
-        // Display win / lose message and set bust to true
-        // Return 0
-        if (handValue > 21)
-        {
-            if (dealerTurn)
-            {
-                Console.WriteLine("Dealer bust.");
-                Console.WriteLine("You Win!!");
-            }
-            else
-            {
-                Console.WriteLine("You bust.");
-                Console.WriteLine("You lose.");
-            }
-            Busted = true;
-
-            return 0;
-        }
-
         // Return the final hand value
         return handValue;
     }
 
     // Method for displaying the cards in player's and dealer's hand
-    // Take in the hand arrays and the turn
-    public void DisplayCards(int[] playerCards, int[] dealerCards, bool dealerTurn)
+    // Take in the lists for both hands and the current turn
+    public void DisplayCards(List<int> playerHand, List<int> dealerHand, bool dealerTurn)
     {
         // If it isn't the dealer's turn then display one dealer's card and hide the other
         // If it is the dealer's turn then display all the cards in the dealer's hand
@@ -314,29 +295,23 @@ class Game
         if (dealerTurn)
         {
             Console.Write("Dealer's cards: ");
-            foreach (int dealerCard in dealerCards)
+            foreach (int card in dealerHand)
             {
-                if (dealerCard != 0)
-                { 
-                    Console.Write($"{_ranks[(dealerCard - 1) % 13]}{_suits[(dealerCard - 1) / 13]} ");
-                }
+                Console.Write($"{_ranks[card % 13]}{_suits[card / 13]} ");
             }
             Console.WriteLine();
         }
         else
         {
-            Console.WriteLine($"Dealer's cards: {_ranks[(dealerCards[0] - 1) % 13]}{_suits[(dealerCards[0] - 1) / 13]} **");
+            Console.WriteLine($"Dealer's cards: {_ranks[dealerHand[0] % 13]}{_suits[dealerHand[0] / 13]} **");
         }
 
         // Display all the cards in the player's hand
         Console.WriteLine();
         Console.Write("Player's cards: ");
-        foreach (int playerCard in playerCards)
+        foreach (int card in playerHand)
         {
-            if (playerCard != 0)
-            {
-                Console.Write($"{_ranks[(playerCard - 1) % 13]}{_suits[(playerCard - 1) / 13]} ");
-            }
+            Console.Write($"{_ranks[card % 13]}{_suits[card / 13]} ");
         }
         Console.WriteLine("\n");
     }
@@ -349,10 +324,6 @@ class Game
             return _money;
         }
     }
-
-    // Set and get property for checking bust value to change game state
-    // Set is set to private since will only be set by check value method
-    public bool Busted { private set; get; }
 
     // Method for checking if player / dealer has reached the max amount to stop them hitting
     // For player the value is 21 and dealer value being 16
